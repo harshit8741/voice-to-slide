@@ -1,0 +1,36 @@
+
+> frontend@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.4.3 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://10.255.255.254:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 7.2s
+ GET / 200 in 8116ms
+ GET / 200 in 297ms
+ ✓ Compiled /favicon.ico in 423ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 786ms
+ ○ Compiling /slides/[id] ...
+ ✓ Compiled /slides/[id] in 4.6s
+ GET /slides/bb33730a-cecb-47d0-9752-442f9c406b97 200 in 6578ms
+ ○ Compiling /presentations ...
+ ✓ Compiled /presentations in 1390ms
+ GET /presentations 200 in 1518ms
+ GET /slides/4bfa781e-eac2-4baf-bc35-9215b206baa7 200 in 144ms
+ GET /presentations 200 in 99ms
+ GET / 200 in 110ms
+ ○ Compiling /about ...
+ ✓ Compiled /about in 909ms
+ GET /about 200 in 1145ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 838ms
+ GET /dashboard 200 in 930ms
+ GET /presentations 200 in 90ms
+ GET /presentations 200 in 105ms
+ GET / 200 in 81ms
+[?25h
