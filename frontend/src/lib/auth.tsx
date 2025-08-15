@@ -19,10 +19,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
+    // Prevent multiple initialization calls
+    if (hasInitialized) return;
+    
     const token = localStorage.getItem('token');
     if (token) {
+      setHasInitialized(true);
       authApi
         .getCurrentUser()
         .then((userData) => {
@@ -40,8 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
     } else {
       setLoading(false);
+      setHasInitialized(true);
     }
-  }, []);
+  }, [hasInitialized]);
 
   const login = (token: string, userData: User) => {
     localStorage.setItem('token', token);

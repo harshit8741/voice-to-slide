@@ -31,6 +31,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Simple cache for API responses
+let userCache: { user: User; timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 // Auth API functions
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
@@ -44,12 +48,25 @@ export const authApi = {
   },
 
   getCurrentUser: async (): Promise<User> => {
+    // Check cache first
+    if (userCache && Date.now() - userCache.timestamp < CACHE_DURATION) {
+      return userCache.user;
+    }
+    
     const response = await api.get('/api/auth/me');
+    
+    // Update cache
+    userCache = {
+      user: response.data,
+      timestamp: Date.now()
+    };
+    
     return response.data;
   },
 
   logout: () => {
     localStorage.removeItem('token');
+    userCache = null; // Clear cache on logout
   },
 };
 
