@@ -49,8 +49,13 @@ export function AuthForm({ mode }: AuthFormProps) {
       } else {
         toast.error(response.message || 'Authentication failed');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Something went wrong');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error && 
+        typeof error.response === 'object' && error.response && 'data' in error.response &&
+        typeof error.response.data === 'object' && error.response.data && 'message' in error.response.data
+        ? (error.response.data as { message: string }).message
+        : 'Something went wrong';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -87,15 +92,15 @@ export function AuthForm({ mode }: AuthFormProps) {
                     label="First Name"
                     type="text"
                     placeholder="John"
-                    error={(errors as any)?.firstName?.message as string}
-                    {...register('firstName' as any)}
+                    error={(!isLogin && 'firstName' in errors) ? (errors as { firstName?: { message?: string } }).firstName?.message : undefined}
+                    {...register('firstName' as keyof (LoginFormData | SignupFormData))}
                   />
                   <Input
                     label="Last Name"
                     type="text"
                     placeholder="Doe"
-                    error={(errors as any)?.lastName?.message as string}
-                    {...register('lastName' as any)}
+                    error={(!isLogin && 'lastName' in errors) ? (errors as { lastName?: { message?: string } }).lastName?.message : undefined}
+                    {...register('lastName' as keyof (LoginFormData | SignupFormData))}
                   />
                 </div>
               )}

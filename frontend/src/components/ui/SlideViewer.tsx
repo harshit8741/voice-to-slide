@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PresentationWithSlides, Slide } from '@/types';
 import { Button } from './Button';
 import { ExportButton } from './ExportButton';
-import { ChevronLeft, ChevronRight, FileText, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 interface SlideViewerProps {
   presentation: PresentationWithSlides;

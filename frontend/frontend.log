@@ -8,29 +8,45 @@
    - Environments: .env.local
 
  ✓ Starting...
- ✓ Ready in 3.1s
+ ✓ Ready in 2.6s
  ○ Compiling / ...
- ✓ Compiled / in 7.2s
- GET / 200 in 8116ms
- GET / 200 in 297ms
- ✓ Compiled /favicon.ico in 423ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 786ms
+ ✓ Compiled / in 5.6s
+ GET / 200 in 6275ms
+ GET / 200 in 605ms
  ○ Compiling /slides/[id] ...
- ✓ Compiled /slides/[id] in 4.6s
- GET /slides/bb33730a-cecb-47d0-9752-442f9c406b97 200 in 6578ms
+ ✓ Compiled /slides/[id] in 4.8s
+ GET /slides/f78ad576-1838-4c2d-880f-6c9b6f09ddff 200 in 7325ms
+ GET / 200 in 356ms
  ○ Compiling /presentations ...
- ✓ Compiled /presentations in 1390ms
- GET /presentations 200 in 1518ms
- GET /slides/4bfa781e-eac2-4baf-bc35-9215b206baa7 200 in 144ms
- GET /presentations 200 in 99ms
- GET / 200 in 110ms
+ ✓ Compiled /presentations in 2.4s
+ GET /presentations 200 in 2569ms
+ GET /slides/f78ad576-1838-4c2d-880f-6c9b6f09ddff 200 in 220ms
+ GET / 200 in 95ms
+ GET /slides/2f7e80ee-04ea-4113-8e72-7db17aaead43 200 in 434ms
+ ○ Compiling /slides ...
+ ✓ Compiled /slides in 2.6s
+ GET /slides 200 in 2730ms
+ GET /presentations 200 in 104ms
+ GET / 200 in 87ms
  ○ Compiling /about ...
- ✓ Compiled /about in 909ms
- GET /about 200 in 1145ms
+ ✓ Compiled /about in 943ms
+ GET /about 200 in 1149ms
+ GET /presentations 200 in 83ms
+ GET /slides/849d9f33-11c7-4796-b7a2-2177dec3e825 200 in 149ms
+ GET /presentations 200 in 85ms
+ GET /slides/edcfc7bb-42d1-4464-8e6d-09280eefb2fd 200 in 114ms
+ GET /presentations 200 in 74ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1215ms
+ GET /login 200 in 1324ms
+ GET /login 200 in 123ms
+ ○ Compiling /auth/callback ...
+ ✓ Compiled /auth/callback in 607ms
+ GET /auth/callback?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjNTJhOWIyYy0zYWUzLTQyNDEtYmY4MS1hY2Q0OWZhMDA0M2MiLCJlbWFpbCI6ImhhcnNoaXRzMDI0MEBnbWFpbC5jb20iLCJhdXRoUHJvdmlkZXIiOiJnb29nbGUiLCJpYXQiOjE3NTUyNTE4NjUsImV4cCI6MTc1NTg1NjY2NX0.B9E5P7lGG5OVyUBFkhMouVWFRNol973T0RXHlPZJP9U 200 in 796ms
  ○ Compiling /dashboard ...
- ✓ Compiled /dashboard in 838ms
- GET /dashboard 200 in 930ms
- GET /presentations 200 in 90ms
- GET /presentations 200 in 105ms
- GET / 200 in 81ms
+ ✓ Compiled /dashboard in 671ms
+ GET /dashboard 200 in 800ms
+ GET /dashboard 200 in 93ms
+ GET /dashboard 200 in 92ms
+ GET /dashboard 200 in 93ms
 [?25h

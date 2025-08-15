@@ -25,7 +25,6 @@ export default function Home() {
   const [audioData, setAudioData] = useState<number[]>(new Array(60).fill(0));
   const [showSlideGeneration, setShowSlideGeneration] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState<string>('');
-  const [videoInfo, setVideoInfo] = useState<{title: string, thumbnail?: string} | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -180,7 +179,12 @@ export default function Home() {
 
     } catch (err: unknown) {
       console.error('Error processing YouTube video:', err);
-      setError((err as any)?.response?.data?.error || 'Failed to process YouTube video. Please try again.');
+      const errorMessage = err instanceof Error && 'response' in err && 
+        typeof err.response === 'object' && err.response && 'data' in err.response &&
+        typeof err.response.data === 'object' && err.response.data && 'error' in err.response.data
+        ? (err.response.data as { error: string }).error
+        : 'Failed to process YouTube video. Please try again.';
+      setError(errorMessage);
       setStep('youtube-input');
       setProgress(0);
     }
@@ -218,7 +222,12 @@ export default function Home() {
       }
     } catch (err: unknown) {
       console.error('Error transcribing audio:', err);
-      setError((err as any)?.response?.data?.error || 'Failed to transcribe audio. Please try again.');
+      const errorMessage = err instanceof Error && 'response' in err && 
+        typeof err.response === 'object' && err.response && 'data' in err.response &&
+        typeof err.response.data === 'object' && err.response.data && 'error' in err.response.data
+        ? (err.response.data as { error: string }).error
+        : 'Failed to transcribe audio. Please try again.';
+      setError(errorMessage);
       setStep('uploaded');
       setProgress(0);
     }
@@ -263,7 +272,12 @@ export default function Home() {
 
     } catch (err: unknown) {
       console.error('Error generating slides:', err);
-      setError((err as any)?.response?.data?.error || 'Failed to generate slides. Please try again.');
+      const errorMessage = err instanceof Error && 'response' in err && 
+        typeof err.response === 'object' && err.response && 'data' in err.response &&
+        typeof err.response.data === 'object' && err.response.data && 'error' in err.response.data
+        ? (err.response.data as { error: string }).error
+        : 'Failed to generate slides. Please try again.';
+      setError(errorMessage);
       setStep('uploaded');
       setProgress(0);
     }
@@ -282,7 +296,6 @@ export default function Home() {
     setShowSlideGeneration(false);
     setAudioData(new Array(60).fill(0));
     setYoutubeUrl('');
-    setVideoInfo(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -397,7 +410,7 @@ export default function Home() {
                           Record or Upload Audio
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          Choose how you'd like to provide your audio content
+                          Choose how you&apos;d like to provide your audio content
                         </p>
                       </div>
 
@@ -588,7 +601,12 @@ export default function Home() {
                             }, 1500);
                           }).catch((err) => {
                             console.error('Error generating slides:', err);
-                            setError((err as any)?.response?.data?.error || 'Failed to generate slides. Please try again.');
+                            const errorMessage = err instanceof Error && 'response' in err && 
+                              typeof err.response === 'object' && err.response && 'data' in err.response &&
+                              typeof err.response.data === 'object' && err.response.data && 'error' in err.response.data
+                              ? (err.response.data as { error: string }).error
+                              : 'Failed to generate slides. Please try again.';
+                            setError(errorMessage);
                             setStep('idle');
                             setProgress(0);
                           });

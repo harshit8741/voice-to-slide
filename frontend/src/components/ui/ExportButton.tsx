@@ -86,9 +86,16 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
       toast.success('Presentation exported successfully!');
       setShowOptions(false);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Export failed:', error);
-      const errorMessage = error?.response?.data?.details || error?.response?.data?.error || 'Export failed';
+      const errorMessage = error instanceof Error && 'response' in error && 
+        typeof error.response === 'object' && error.response && 'data' in error.response &&
+        typeof error.response.data === 'object' && error.response.data && 
+        (('details' in error.response.data && typeof error.response.data.details === 'string') ||
+         ('error' in error.response.data && typeof error.response.data.error === 'string'))
+        ? ((error.response.data as { details?: string; error?: string }).details || 
+           (error.response.data as { details?: string; error?: string }).error)
+        : 'Export failed';
       toast.error(`Export failed: ${errorMessage}`);
     } finally {
       setIsExporting(false);

@@ -27,7 +27,12 @@ export default function PresentationsPage() {
       setPresentations(data);
     } catch (err: unknown) {
       console.error('Error fetching presentations:', err);
-      setError((err as any)?.response?.data?.error || 'Failed to load presentations');
+      const errorMessage = err instanceof Error && 'response' in err && 
+        typeof err.response === 'object' && err.response && 'data' in err.response &&
+        typeof err.response.data === 'object' && err.response.data && 'error' in err.response.data
+        ? (err.response.data as { error: string }).error
+        : 'Failed to load presentations';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -41,15 +46,6 @@ export default function PresentationsPage() {
     router.push(`/slides/${id}`);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   if (isLoading) {
     return (

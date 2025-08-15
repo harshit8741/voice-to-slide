@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Button } from '@/components/ui/Button';
@@ -20,13 +20,7 @@ export default function PresentationPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    if (presentationId) {
-      fetchPresentation();
-    }
-  }, [presentationId]);
-
-  const fetchPresentation = async () => {
+  const fetchPresentation = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -34,11 +28,22 @@ export default function PresentationPage() {
       setPresentation(data);
     } catch (err: unknown) {
       console.error('Error fetching presentation:', err);
-      setError((err as any)?.response?.data?.error || 'Failed to load presentation');
+      const errorMessage = err instanceof Error && 'response' in err && 
+        typeof err.response === 'object' && err.response && 'data' in err.response &&
+        typeof err.response.data === 'object' && err.response.data && 'error' in err.response.data
+        ? (err.response.data as { error: string }).error
+        : 'Failed to load presentation';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [presentationId]);
+
+  useEffect(() => {
+    if (presentationId) {
+      fetchPresentation();
+    }
+  }, [presentationId, fetchPresentation]);
 
   const handleDelete = async () => {
     if (!presentation) return;
@@ -55,7 +60,12 @@ export default function PresentationPage() {
       router.push('/presentations');
     } catch (err: unknown) {
       console.error('Error deleting presentation:', err);
-      setError((err as any)?.response?.data?.error || 'Failed to delete presentation');
+      const errorMessage = err instanceof Error && 'response' in err && 
+        typeof err.response === 'object' && err.response && 'data' in err.response &&
+        typeof err.response.data === 'object' && err.response.data && 'error' in err.response.data
+        ? (err.response.data as { error: string }).error
+        : 'Failed to delete presentation';
+      setError(errorMessage);
     } finally {
       setIsDeleting(false);
     }

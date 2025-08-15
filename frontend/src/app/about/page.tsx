@@ -22,7 +22,7 @@ export default function AboutPage() {
             </h1>
             
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              We're revolutionizing how lectures, meetings, and audio content become structured presentations 
+              We&apos;re revolutionizing how lectures, meetings, and audio content become structured presentations 
               through AI-powered transcription and intelligent slide generation.
             </p>
           </div>
@@ -237,5 +237,5 @@ export default function AboutPage() {
 
 export const metadata = {
   title: 'About Us - OnEd',
-  description: 'Learn about OnEd\'s mission to transform audio content into professional presentations through AI-powered transcription and slide generation',
+  description: 'Learn about OnEd&apos;s mission to transform audio content into professional presentations through AI-powered transcription and slide generation',
 };

@@ -100,7 +100,7 @@ export const slidesApi = {
     return response.data;
   },
 
-  generateSlidesFromYoutube: async (youtubeUrl: string, title?: string): Promise<GenerateSlidesResponse & { transcription: string; videoInfo: any }> => {
+  generateSlidesFromYoutube: async (youtubeUrl: string, title?: string): Promise<GenerateSlidesResponse & { transcription: string; videoInfo: Record<string, unknown> }> => {
     const response = await api.post('/api/audio-to-slides', {
       youtubeUrl,
       title,
@@ -133,7 +133,7 @@ export const slidesApi = {
     return response.data;
   },
 
-  getThemes: async (): Promise<{ themes: Array<{ key: string; name: string; preview: any }> }> => {
+  getThemes: async (): Promise<{ themes: Array<{ key: string; name: string; preview: { name: string; background: string; titleColor: string; textColor: string; accentColor: string } }> }> => {
     const response = await api.get('/api/slides/themes');
     return response.data;
   },

@@ -38,7 +38,12 @@ export default function SlidesPage() {
       router.push(`/slides/${response.presentation.id}`);
     } catch (err: unknown) {
       console.error('Error generating slides:', err);
-      setError((err as any)?.response?.data?.error || 'Failed to generate slides. Please try again.');
+      const errorMessage = err instanceof Error && 'response' in err && 
+        typeof err.response === 'object' && err.response && 'data' in err.response &&
+        typeof err.response.data === 'object' && err.response.data && 'error' in err.response.data
+        ? (err.response.data as { error: string }).error
+        : 'Failed to generate slides. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsGenerating(false);
     }
