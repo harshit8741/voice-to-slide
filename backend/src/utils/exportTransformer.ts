@@ -12,7 +12,7 @@ export class ExportTransformer {
     themeName: ThemeName = 'professional',
     author?: string
   ): PresentationExport {
-    const theme = THEMES[themeName];
+    const theme = THEMES[themeName] || THEMES.professional!;
     
     return {
       metadata: {

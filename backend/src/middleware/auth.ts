@@ -4,11 +4,11 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/AuthService';
 import { JWTPayload } from '../types';
 
-// Extend Request interface to include user
+// Extend Request interface to include authenticated user
 declare global {
   namespace Express {
     interface Request {
-      user?: JWTPayload;
+      authenticatedUser?: JWTPayload;
     }
   }
 }
@@ -32,6 +32,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  req.user = decoded;
+  req.authenticatedUser = decoded;
   next();
 };

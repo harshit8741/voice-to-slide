@@ -35,7 +35,7 @@ export class PptxExportService {
 
       // Generate and return buffer
       console.log('Writing PPTX file...');
-      const buffer = await pptx.write('arraybuffer') as ArrayBuffer;
+      const buffer = await pptx.write({ outputType: 'arraybuffer' }) as ArrayBuffer;
       console.log('PPTX generated successfully, buffer size:', buffer.byteLength);
       return Buffer.from(buffer);
 

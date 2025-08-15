@@ -43,7 +43,7 @@ export const insertUserSchema = createInsertSchema(users, {
   firstName: (schema) => schema.min(2, 'First name must be at least 2 characters'),
   lastName: (schema) => schema.min(2, 'Last name must be at least 2 characters'),
   password: (schema) => schema.min(6, 'Password must be at least 6 characters').optional(),
-  authProvider: (schema) => z.enum(['email', 'google']).default('email'),
+  authProvider: (schema) => schema.optional().default('email'),
 });
 
 export const selectUserSchema = createSelectSchema(users);

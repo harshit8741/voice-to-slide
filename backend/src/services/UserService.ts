@@ -11,13 +11,15 @@ export class UserService {
    */
   static async getAllUsers(): Promise<SafeUser[]> {
     try {
-      const allUsers = await db.select().from(users);
+      const allUsers = await (db as any).select().from(users);
       
-      return allUsers.map(user => ({
+      return allUsers.map((user: any) => ({
         id: user.id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        profilePicture: user.profilePicture,
+        authProvider: user.authProvider || 'email',
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       }));
@@ -44,14 +46,14 @@ export class UserService {
     try {
       // Check if email is being updated and if it already exists
       if (updates.email) {
-        const existingUser = await db.select().from(users).where(eq(users.email, updates.email));
+        const existingUser = await (db as any).select().from(users).where(eq(users.email, updates.email));
         if (existingUser.length > 0 && existingUser[0]?.id !== userId) {
           throw new Error('Email already exists');
         }
       }
 
       // Update user
-      const updatedUsers = await db
+      const updatedUsers = await (db as any)
         .update(users)
         .set({
           ...updates,
@@ -70,6 +72,8 @@ export class UserService {
         email: updatedUser.email,
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
+        profilePicture: updatedUser.profilePicture,
+        authProvider: updatedUser.authProvider || 'email',
         createdAt: updatedUser.createdAt.toISOString(),
         updatedAt: updatedUser.updatedAt.toISOString(),
       };
@@ -84,7 +88,7 @@ export class UserService {
    */
   static async deleteUser(userId: string): Promise<boolean> {
     try {
-      const deletedUsers = await db.delete(users).where(eq(users.id, userId)).returning();
+      const deletedUsers = await (db as any).delete(users).where(eq(users.id, userId)).returning();
       return deletedUsers.length > 0;
     } catch (error) {
       console.error('Delete user error:', error);
@@ -97,14 +101,14 @@ export class UserService {
    */
   static async getUserStats(): Promise<{ totalUsers: number; recentUsers: number }> {
     try {
-      const allUsers = await db.select().from(users);
+      const allUsers = await (db as any).select().from(users);
       const totalUsers = allUsers.length;
 
       // Count users created in the last 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const recentUsers = allUsers.filter(user => user.createdAt > thirtyDaysAgo).length;
+      const recentUsers = allUsers.filter((user: any) => user.createdAt > thirtyDaysAgo).length;
 
       return {
         totalUsers,

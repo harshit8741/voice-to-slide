@@ -56,7 +56,7 @@ router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
 router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const user = await UserService.getUserById(id);
+    const user = await UserService.getUserById(id!);
     
     if (!user) {
       res.status(404).json({
@@ -82,7 +82,7 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
  */
 router.put('/profile', authenticateToken, validateBody(updateProfileSchema), async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.authenticatedUser) {
       res.status(401).json({
         success: false,
         message: 'User not authenticated',
@@ -90,7 +90,7 @@ router.put('/profile', authenticateToken, validateBody(updateProfileSchema), asy
       return;
     }
 
-    const updatedUser = await UserService.updateUserProfile(req.user.userId, req.body);
+    const updatedUser = await UserService.updateUserProfile(req.authenticatedUser.userId, req.body);
     
     if (!updatedUser) {
       res.status(400).json({
@@ -122,7 +122,7 @@ router.put('/profile', authenticateToken, validateBody(updateProfileSchema), asy
  */
 router.delete('/account', authenticateToken, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.authenticatedUser) {
       res.status(401).json({
         success: false,
         message: 'User not authenticated',
@@ -130,7 +130,7 @@ router.delete('/account', authenticateToken, async (req: Request, res: Response)
       return;
     }
 
-    const deleted = await UserService.deleteUser(req.user.userId);
+    const deleted = await UserService.deleteUser(req.authenticatedUser.userId);
     
     if (!deleted) {
       res.status(400).json({

@@ -29,7 +29,7 @@ const exportSchema = z.object({
 router.post('/generate', authenticateToken, validateBody(generateSlidesSchema), async (req, res) => {
   try {
     const { transcription, title } = req.body;
-    const userId = req.user?.userId;
+    const userId = req.authenticatedUser?.userId;
 
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });
@@ -73,7 +73,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return;
     }
 
-    const userId = req.user?.userId;
+    const userId = req.authenticatedUser?.userId;
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
@@ -105,7 +105,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Get all user presentations
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.authenticatedUser?.userId;
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
@@ -129,7 +129,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return;
     }
 
-    const userId = req.user?.userId;
+    const userId = req.authenticatedUser?.userId;
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
@@ -161,7 +161,7 @@ router.post('/:id/export', authenticateToken, validateBody(exportSchema), async 
       return;
     }
 
-    const userId = req.user?.userId;
+    const userId = req.authenticatedUser?.userId;
     if (!userId) {
       console.log('User not authenticated');
       res.status(401).json({ error: 'User not authenticated' });

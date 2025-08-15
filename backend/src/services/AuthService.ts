@@ -17,7 +17,7 @@ export class AuthService {
   static async register(credentials: SignupCredentials): Promise<AuthResponse> {
     try {
       // Check if user already exists
-      const existingUser = await db.select().from(users).where(eq(users.email, credentials.email));
+      const existingUser = await (db as any).select().from(users).where(eq(users.email, credentials.email));
       
       if (existingUser.length > 0) {
         return {
@@ -30,7 +30,7 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(credentials.password, this.SALT_ROUNDS);
 
       // Create user
-      const newUser = await db.insert(users).values({
+      const newUser = await (db as any).insert(users).values({
         email: credentials.email,
         password: hashedPassword,
         firstName: credentials.firstName,
@@ -72,7 +72,7 @@ export class AuthService {
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       // Find user by email
-      const userResult = await db.select().from(users).where(eq(users.email, credentials.email));
+      const userResult = await (db as any).select().from(users).where(eq(users.email, credentials.email));
       const user = userResult[0];
 
       if (!user) {
@@ -126,7 +126,7 @@ export class AuthService {
    */
   static async getUserById(userId: string): Promise<SafeUser | null> {
     try {
-      const userResult = await db.select().from(users).where(eq(users.id, userId));
+      const userResult = await (db as any).select().from(users).where(eq(users.id, userId));
       const user = userResult[0];
 
       if (!user) {
@@ -144,9 +144,13 @@ export class AuthService {
    * Generate JWT token
    */
   private static generateToken(payload: JWTPayload): string {
-    return jwt.sign(payload, this.JWT_SECRET, {
-      expiresIn: this.JWT_EXPIRES_IN,
-    });
+    if (!this.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+    const signOptions: jwt.SignOptions = {
+      expiresIn: '7d',
+    };
+    return jwt.sign(payload, this.JWT_SECRET!, signOptions);
   }
 
   /**

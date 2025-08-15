@@ -114,7 +114,7 @@ const processAudioFile = async (audioFilePath: string, userId: string, title?: s
 // POST /api/audio-to-slides - Convert audio directly to slides (file upload or YouTube URL)
 router.post('/', authenticateToken, upload.single('audio'), async (req, res): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.authenticatedUser?.userId;
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });
       return;

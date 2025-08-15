@@ -78,7 +78,7 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
  */
 router.get('/me', authenticateToken, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.authenticatedUser) {
       res.status(401).json({
         success: false,
         message: 'User not authenticated',
@@ -86,7 +86,7 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
       return;
     }
 
-    const user = await AuthService.getUserById(req.user.userId);
+    const user = await AuthService.getUserById(req.authenticatedUser.userId);
     
     if (!user) {
       res.status(404).json({

@@ -28,14 +28,21 @@ router.get('/google/callback',
       }
 
       // Generate JWT token
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET is not defined');
+      }
+      
+      const signOptions: jwt.SignOptions = {
+        expiresIn: '7d'
+      };
       const token = jwt.sign(
         { 
           userId: user.id, 
-          email: user.email,
-          authProvider: user.authProvider 
+          email: user.email 
         },
-        process.env.JWT_SECRET!,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        jwtSecret!,
+        signOptions
       );
 
       // Redirect to frontend with token

@@ -225,7 +225,7 @@ ${transcription}
       userId
     };
     
-    const [presentation] = await db.insert(presentations).values(newPresentation).returning();
+    const [presentation] = await (db as any).insert(presentations).values(newPresentation).returning();
     
     // Create slides
     const slidePromises = slideContents.map(async (slideContent, index) => {
@@ -238,7 +238,7 @@ ${transcription}
         slideOrder: index
       };
       
-      return db.insert(slides).values(newSlide).returning();
+      return (db as any).insert(slides).values(newSlide).returning();
     });
     
     const slideResults = await Promise.all(slidePromises);
@@ -252,7 +252,7 @@ ${transcription}
 
   async getPresentationWithSlides(presentationId: string, userId: string): Promise<PresentationWithSlides | null> {
     try {
-      const presentation = await db
+      const presentation = await (db as any)
         .select()
         .from(presentations)
         .where(eq(presentations.id, presentationId))
@@ -262,7 +262,7 @@ ${transcription}
         return null;
       }
       
-      const presentationSlides = await db
+      const presentationSlides = await (db as any)
         .select()
         .from(slides)
         .where(eq(slides.presentationId, presentationId))
@@ -280,7 +280,7 @@ ${transcription}
 
   async getUserPresentations(userId: string) {
     try {
-      return await db
+      return await (db as any)
         .select()
         .from(presentations)
         .where(eq(presentations.userId, userId))
@@ -294,7 +294,7 @@ ${transcription}
   async deletePresentation(presentationId: string, userId: string): Promise<boolean> {
     try {
       // Verify ownership
-      const presentation = await db
+      const presentation = await (db as any)
         .select()
         .from(presentations)
         .where(eq(presentations.id, presentationId))
@@ -305,10 +305,10 @@ ${transcription}
       }
       
       // Delete slides first (due to foreign key constraint)
-      await db.delete(slides).where(eq(slides.presentationId, presentationId));
+      await (db as any).delete(slides).where(eq(slides.presentationId, presentationId));
       
       // Delete presentation
-      await db.delete(presentations).where(eq(presentations.id, presentationId));
+      await (db as any).delete(presentations).where(eq(presentations.id, presentationId));
       
       return true;
     } catch (error) {

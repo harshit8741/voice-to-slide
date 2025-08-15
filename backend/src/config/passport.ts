@@ -15,7 +15,7 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         // Check if user already exists with this Google ID
-        const existingUserByGoogleId = await db
+        const existingUserByGoogleId = await (db as any)
           .select()
           .from(users)
           .where(eq(users.googleId, profile.id))
@@ -26,7 +26,7 @@ passport.use(
         }
 
         // Check if user exists with this email
-        const existingUserByEmail = await db
+        const existingUserByEmail = await (db as any)
           .select()
           .from(users)
           .where(eq(users.email, profile.emails?.[0]?.value || ''))
@@ -34,7 +34,7 @@ passport.use(
 
         if (existingUserByEmail.length > 0) {
           // Link Google account to existing user
-          const updatedUser = await db
+          const updatedUser = await (db as any)
             .update(users)
             .set({
               googleId: profile.id,
@@ -49,7 +49,7 @@ passport.use(
         }
 
         // Create new user
-        const newUser = await db
+        const newUser = await (db as any)
           .insert(users)
           .values({
             email: profile.emails?.[0]?.value || '',
@@ -64,7 +64,7 @@ passport.use(
         return done(null, newUser[0]);
       } catch (error) {
         console.error('Google OAuth error:', error);
-        return done(error, null);
+        return done(error, false);
       }
     }
   )
@@ -78,15 +78,15 @@ passport.serializeUser((user: any, done) => {
 // Deserialize user from session
 passport.deserializeUser(async (id: string, done) => {
   try {
-    const user = await db
+    const user = await (db as any)
       .select()
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
 
-    done(null, user[0] || null);
+    done(null, user[0] || false);
   } catch (error) {
-    done(error, null);
+    done(error, false);
   }
 });
 
