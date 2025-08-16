@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `./run-all.sh` - Automated setup and startup script for complete development environment
 - Frontend: http://localhost:3000
 - Backend: http://localhost:5000
-- Health check: http://localhost:5000/health
+- Whisper Service: http://localhost:8000
+- Backend Health: http://localhost:5000/health
+- Whisper Health: http://localhost:8000/health
 
 ### Frontend (Next.js 15 with TypeScript)
 ```bash
@@ -30,11 +32,12 @@ npm run db:migrate   # Apply pending migrations to database
 npm run db:studio    # Open Drizzle Studio for database management
 ```
 
-### Docker Commands
+### Whisper Microservice (FastAPI + Docker)
 ```bash
-cd backend/whisper
-docker build -t whisper-local .  # Build Whisper transcription container
-docker run --rm whisper-local --help  # Test container health
+cd whisper
+docker compose up --build    # Build and start Whisper FastAPI microservice
+docker compose down          # Stop Whisper service
+python main.py               # Run locally (requires dependencies)
 ```
 
 ## Architecture Overview
@@ -54,13 +57,16 @@ This is an AI-powered audio transcription platform with presentation generation 
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: JWT tokens with bcrypt password hashing + Google OAuth 2.0
 - **File Processing**: Multer for audio uploads (50MB limit)
-- **AI Integration**: Dockerized OpenAI Whisper + Google Gemini for slide generation
-- **Architecture Pattern**: Service layer with middleware-based validation
+- **AI Integration**: HTTP communication with Whisper microservice + Google Gemini for slide generation
+- **Architecture Pattern**: Microservice architecture with service layer and middleware-based validation
 
-### AI Transcription System
-- **Engine**: OpenAI Whisper (base model) in Docker container
-- **Containerization**: Pre-built image with model included to avoid download delays
+### Whisper Microservice Architecture (`/whisper`)
+- **Framework**: FastAPI with Python
+- **Engine**: OpenAI Whisper (base model) pre-loaded
+- **Containerization**: Docker with pre-downloaded model to avoid first-run delays
+- **API**: RESTful HTTP endpoints for transcription and health checks
 - **Supported Formats**: MP3, WAV, WebM, M4A, OGG, FLAC
+- **Communication**: HTTP requests from Node.js backend to FastAPI service
 - **Processing**: Isolated Docker execution for security and scalability
 
 ## Key Directories
@@ -70,7 +76,7 @@ This is an AI-powered audio transcription platform with presentation generation 
 - `backend/src/routes/` - API endpoints (auth, users, transcribe, slides, audioToSlides)
 - `backend/src/services/` - Business logic (AuthService, UserService, slideGeneratorService)
 - `backend/src/schemas/` - Drizzle ORM schemas for PostgreSQL
-- `backend/whisper/` - Docker container for Whisper transcription
+- `whisper/` - FastAPI microservice for Whisper transcription (Docker containerized)
 
 ## Database Configuration
 
@@ -91,6 +97,9 @@ PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 GEMINI_API_KEY=your-gemini-api-key
+
+# Whisper Microservice Configuration
+WHISPER_SERVICE_URL=http://localhost:8000
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com

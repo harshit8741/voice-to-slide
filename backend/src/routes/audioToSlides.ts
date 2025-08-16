@@ -2,13 +2,24 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
+import FormData from 'form-data';
 import { authenticateToken } from '../middleware/auth';
 import { SlideGeneratorService } from '../services/slideGeneratorService';
 import { YouTubeService } from '../services/youtubeService';
 
+// Type definitions for Whisper service responses
+interface WhisperTranscriptionResponse {
+  transcription: string;
+  language?: string;
+  success: boolean;
+  error?: string;
+}
+
 const router = express.Router();
 const slideGeneratorService = new SlideGeneratorService();
+
+// Whisper service configuration
+const WHISPER_SERVICE_URL = process.env.WHISPER_SERVICE_URL || 'http://localhost:8000';
 
 // Configure multer for file uploads (same as transcribe route)
 const storage = multer.diskStorage({
@@ -42,73 +53,55 @@ const upload = multer({
 
 // Helper function to process audio file (either uploaded or from YouTube)
 const processAudioFile = async (audioFilePath: string, userId: string, title?: string) => {
-  const audioFileName = path.basename(audioFilePath);
-  const containerAudioPath = `/app/audio/${audioFileName}`;
-
-  // Transcribe audio using Whisper
-  const dockerCommand = `docker run --rm -v "${path.dirname(audioFilePath)}:/app/audio" whisper-local "${containerAudioPath}"`;
-
-  const transcriptionPromise = new Promise<string>((resolve, reject) => {
-    exec(dockerCommand, { timeout: 600000, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
-      // Clean up audio file
-      if (fs.existsSync(audioFilePath)) {
-        fs.unlinkSync(audioFilePath);
-      }
-
-      if (error) {
-        console.error('Docker execution error:', error);
-        reject(new Error('Transcription failed: ' + error.message));
-        return;
-      }
-
-      if (stderr) {
-        console.log('Docker stderr (may include model download progress):', stderr);
-        
-        const stderrLines = stderr.trim().split('\n');
-        const lastLine = stderrLines[stderrLines.length - 1];
-        
-        if (lastLine) {
-          try {
-            const errorResponse = JSON.parse(lastLine);
-            if (errorResponse.error && errorResponse.success === false) {
-              reject(new Error('Transcription failed: ' + errorResponse.error));
-              return;
-            }
-          } catch (parseError) {
-            // Continue if it's not JSON error
-          }
-        }
-      }
-
-      try {
-        const transcriptionResult = JSON.parse(stdout.trim());
-        
-        if (transcriptionResult.success) {
-          resolve(transcriptionResult.transcription);
-        } else {
-          reject(new Error('Transcription failed: ' + (transcriptionResult.error || 'Unknown error')));
-        }
-      } catch (parseError) {
-        console.error('Failed to parse transcription result:', parseError);
-        reject(new Error('Invalid transcription response'));
-      }
+  try {
+    // Create FormData for multipart/form-data request to Whisper service
+    const formData = new FormData();
+    formData.append('audio', fs.createReadStream(audioFilePath), {
+      filename: path.basename(audioFilePath),
+      contentType: 'audio/mpeg' // Default content type, Whisper service will handle detection
     });
-  });
 
-  const transcription = await transcriptionPromise;
+    console.log(`Sending transcription request to ${WHISPER_SERVICE_URL}/transcribe`);
+    
+    // Make HTTP request to Whisper microservice
+    const response = await fetch(`${WHISPER_SERVICE_URL}/transcribe`, {
+      method: 'POST',
+      body: formData,
+    });
 
-  if (!transcription || transcription.trim().length < 10) {
-    throw new Error('Transcription too short or empty. Please provide a longer audio recording.');
+    const transcriptionResult = await response.json() as WhisperTranscriptionResponse;
+
+    // Clean up audio file
+    if (fs.existsSync(audioFilePath)) {
+      fs.unlinkSync(audioFilePath);
+    }
+
+    if (!response.ok || !transcriptionResult.success) {
+      throw new Error('Transcription failed: ' + (transcriptionResult.error || 'Unknown error'));
+    }
+
+    const transcription = transcriptionResult.transcription;
+
+    if (!transcription || transcription.trim().length < 10) {
+      throw new Error('Transcription too short or empty. Please provide a longer audio recording.');
+    }
+
+    // Generate slides from transcription
+    const presentation = await slideGeneratorService.generateSlidesFromTranscription(
+      transcription,
+      userId,
+      title
+    );
+
+    return { presentation, transcription };
+
+  } catch (error) {
+    // Ensure cleanup even on error
+    if (fs.existsSync(audioFilePath)) {
+      fs.unlinkSync(audioFilePath);
+    }
+    throw error;
   }
-
-  // Generate slides from transcription
-  const presentation = await slideGeneratorService.generateSlidesFromTranscription(
-    transcription,
-    userId,
-    title
-  );
-
-  return { presentation, transcription };
 };
 
 // POST /api/audio-to-slides - Convert audio directly to slides (file upload or YouTube URL)

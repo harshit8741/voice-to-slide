@@ -1,7 +1,7 @@
-# OnEd - Audio Transcription Education Platform
+# OnEd - AI-Powered Audio Transcription & Presentation Platform
 
 ## Project Overview
-OnEd is a full-stack TypeScript application that combines an educational platform with advanced AI-powered audio transcription capabilities and automatic PowerPoint presentation generation using OpenAI's Whisper model and Google Gemini AI via Docker containerization.
+OnEd is a cutting-edge full-stack TypeScript application that transforms audio content into professional PowerPoint presentations using modern microservice architecture. Built with OpenAI's Whisper FastAPI microservice and Google Gemini AI for intelligent slide generation.
 
 ## Core Architecture
 
@@ -17,16 +17,19 @@ OnEd is a full-stack TypeScript application that combines an educational platfor
 
 ### **Backend (Express + TypeScript)**
 - **Framework**: Express.js with TypeScript
-- **Database**: Flexible schema supporting both PostgreSQL and SQLite
-- **ORM**: Drizzle ORM with automated migrations
-- **Authentication**: JWT tokens with bcrypt password hashing
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: JWT tokens + bcrypt hashing + Google OAuth 2.0
 - **File Processing**: Multer for audio uploads (50MB limit)
+- **AI Integration**: HTTP communication with Whisper microservice + Google Gemini
 
-### **AI Transcription System**
-- **Engine**: OpenAI Whisper (base model) in Docker container
-- **Containerization**: Custom Docker image with pre-downloaded model
+### **Whisper Microservice (FastAPI + Docker)**
+- **Framework**: FastAPI with Python
+- **Engine**: OpenAI Whisper (base model) pre-loaded
+- **API**: RESTful HTTP endpoints for transcription and health checks
+- **Containerization**: Docker with pre-downloaded model for fast startup
+- **Communication**: HTTP requests from Node.js backend to FastAPI service
 - **Supported Formats**: MP3, WAV, WebM, M4A, OGG, FLAC
-- **Processing**: Isolated Docker execution for security
+- **Processing**: Isolated microservice execution for security and scalability
 
 ## Technical Flow
 
@@ -36,18 +39,27 @@ OnEd is a full-stack TypeScript application that combines an educational platfor
 - Protected routes with middleware validation
 - Automatic token refresh handling
 
-### 2. **Audio Transcription Flow**
+### 2. **Audio Transcription Flow (Microservice Architecture)**
 ```
 User uploads/records audio → Express API receives file → 
-Multer stores temporarily → Docker container processes → 
-Whisper transcribes → JSON response → Frontend displays results
+Multer stores temporarily → HTTP request to Whisper microservice → 
+FastAPI processes with Whisper model → JSON response → 
+Backend cleans up files → Frontend displays results
 ```
 
-### 3. **Development Workflow**
+### 3. **Slide Generation Flow**
+```
+User submits transcription → Google Gemini AI analyzes content → 
+AI generates structured slides → Backend stores in database → 
+Frontend displays slides → User can export to PowerPoint
+```
+
+### 4. **Development Workflow**
 - `./run-all.sh` - Automated setup and concurrent server startup
 - Frontend: http://localhost:3000 (Next.js with Turbopack)
 - Backend: http://localhost:5000 (Express with tsx watch)
-- Docker builds Whisper container automatically
+- Whisper Service: http://localhost:8000 (FastAPI microservice)
+- Docker Compose orchestrates Whisper microservice automatically
 
 ## Key Components
 
@@ -60,12 +72,21 @@ Whisper transcribes → JSON response → Frontend displays results
 ### **Backend Services**
 - `AuthService` - User authentication and JWT management
 - `UserService` - User CRUD operations
-- `transcribe.ts` - Audio processing and Docker integration
+- `SlideGeneratorService` - AI-powered slide generation
+- `PptxExportService` - PowerPoint export with themes
+- `transcribe.ts` - HTTP communication with Whisper microservice
 - Database schemas with automatic UUID generation
 
+### **Whisper Microservice Components**
+- `main.py` - FastAPI application with transcription endpoints
+- `/transcribe` - Audio processing endpoint
+- `/health` - Service health monitoring
+- Pre-loaded Whisper model for fast processing
+
 ### **Infrastructure**
-- Dockerized Whisper model with CPU optimization
-- Comprehensive error handling and logging
+- FastAPI microservice architecture with HTTP communication
+- Docker Compose orchestration for local development
+- Comprehensive error handling and logging across services
 - CORS configuration for cross-origin requests
 - Security headers via Helmet
 
@@ -98,8 +119,17 @@ Users {
 - `DELETE /account` - Delete user account (protected)
 
 ### Transcription (`/api/transcribe`)
-- `POST /` - Transcribe audio file (protected)
-- `GET /health` - Check Docker container health (protected)
+- `POST /` - Transcribe audio file via Whisper microservice (protected)
+- `GET /health` - Check Whisper microservice health (protected)
+
+### Audio-to-Slides (`/api/audio-to-slides`)
+- `POST /` - Upload audio, transcribe, and generate slides in one workflow (protected)
+
+### Whisper Microservice (`http://localhost:8000`)
+- `POST /transcribe` - Direct transcription endpoint (multipart/form-data)
+- `GET /health` - Service health check
+- `GET /docs` - FastAPI automatic documentation
+- `GET /` - Service information
 
 ## File Structure
 ```
@@ -138,13 +168,17 @@ on-ed/
 │   │   ├── db/                 # Database configuration
 │   │   │   └── index.ts        # Database connection
 │   │   └── index.ts            # Main server file
-│   ├── whisper/                # Docker transcription service
-│   │   ├── Dockerfile          # Whisper container definition
-│   │   └── transcribe.py       # Python transcription script
-│   ├── uploads/                # Temporary file storage
+│   └── uploads/                # Temporary file storage
 │   └── package.json
+├── whisper/                    # FastAPI microservice for transcription
+│   ├── main.py                 # FastAPI application
+│   ├── requirements.txt        # Python dependencies
+│   ├── Dockerfile              # Microservice container
+│   ├── docker-compose.yml      # Service orchestration
+│   └── README.md               # Microservice documentation
 ├── run-all.sh                  # Development startup script
 ├── stop-all.sh                 # Development shutdown script
+├── PROJECT_SUMMARY.md          # Comprehensive project overview
 └── CLAUDE.md                   # Development instructions
 ```
 
@@ -177,9 +211,9 @@ cd frontend
 npm install
 npm run dev
 
-# Build Whisper Docker image
-cd backend/whisper
-docker build -t whisper-local .
+# Build and start Whisper microservice
+cd whisper
+docker compose up --build
 ```
 
 ### Environment Variables
@@ -192,6 +226,8 @@ JWT_EXPIRES_IN=7d
 PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
+GEMINI_API_KEY=your-google-gemini-api-key
+WHISPER_SERVICE_URL=http://localhost:8000
 ```
 
 **Frontend (.env.local)**
@@ -207,11 +243,11 @@ NEXT_PUBLIC_API_URL=http://localhost:5000
 - CORS configuration for cross-origin security
 - Helmet security headers
 - File upload size limits and type validation
-- Docker container isolation for AI processing
+- Microservice container isolation for AI processing
 
 ## Performance Optimizations
 - Next.js 15 with Turbopack for fast development
-- Pre-downloaded Whisper model in Docker container
+- Pre-downloaded Whisper model in FastAPI microservice
 - CPU-optimized PyTorch installation
 - Efficient file handling with cleanup
 - Database connection pooling
@@ -265,12 +301,51 @@ OnEd now includes a comprehensive PowerPoint export system that transforms AI-ge
 - **Data Transformation**: Clean separation between database models and export formats
 - **Security**: Protected endpoints with JWT authentication and user ownership validation
 
+## Microservice Architecture Benefits
+
+### Scalability
+- **Independent Scaling**: Each service can be scaled based on demand
+- **Resource Optimization**: CPU-intensive transcription isolated from web services
+- **Horizontal Scaling**: Multiple Whisper instances can be deployed behind a load balancer
+
+### Maintainability
+- **Separation of Concerns**: Clear boundaries between web app and AI processing
+- **Technology Flexibility**: Python for AI, TypeScript for web development
+- **Independent Deployment**: Services can be updated independently
+
+### Reliability
+- **Fault Isolation**: If Whisper service fails, main app continues to function
+- **Health Monitoring**: Built-in health checks for all services
+- **Graceful Degradation**: System can handle partial service failures
+
+### Development Experience
+- **Local Development**: Docker Compose orchestrates all services
+- **Fast Iteration**: Hot reload for all services during development
+- **Clear APIs**: Well-defined HTTP interfaces between services
+
+## Deployment Architecture
+
+### Production Deployment Options
+- **Render.com**: Optimized configuration for Render platform
+- **Docker Support**: Full containerization for any cloud provider
+- **Environment Variables**: Cloud-native configuration management
+- **Health Checks**: Built-in monitoring for orchestration platforms
+
+### Service Communication
+- **HTTP/REST**: Standard HTTP communication between services
+- **JSON APIs**: Structured data exchange with proper error handling
+- **File Upload**: Multipart form data for audio processing
+- **Health Monitoring**: Regular health checks for service discovery
+
 ## Future Enhancements
-- Real-time transcription streaming
-- Multiple language support
-- Advanced audio preprocessing
-- Transcription history and management
-- User analytics and insights
-- Integration with learning management systems
-- Additional export formats (PDF, Google Slides)
-- Custom theme creation and management
+- **Real-time Transcription**: WebSocket streaming for live audio processing
+- **GPU Support**: GPU acceleration for faster Whisper processing
+- **Multiple Language Support**: Enhanced language detection and processing
+- **Advanced Audio Preprocessing**: Noise reduction and audio enhancement
+- **Transcription History**: User transcription management and search
+- **User Analytics**: Advanced insights and usage statistics
+- **LMS Integration**: Integration with learning management systems
+- **Additional Export Formats**: PDF, Google Slides, and custom formats
+- **Custom Theme Creation**: User-defined PowerPoint themes
+- **Kubernetes Deployment**: Production orchestration with Kubernetes
+- **API Gateway**: Centralized API management and authentication

@@ -9,7 +9,7 @@ OnEd is a comprehensive full-stack TypeScript application that transforms audio 
 ### Audio Processing
 - **Real-time Audio Recording** with waveform visualization
 - **Multi-format File Upload** (MP3, WAV, WebM, M4A, OGG, FLAC)
-- **AI Transcription** using OpenAI Whisper model in Docker containers
+- **AI Transcription** using OpenAI Whisper FastAPI microservice
 - **Intelligent Content Processing** with Google Gemini AI
 
 ### Presentation Generation
@@ -28,7 +28,7 @@ OnEd is a comprehensive full-stack TypeScript application that transforms audio 
 - **JWT-based Authentication** with secure token handling
 - **Protected Routes** and API endpoints
 - **User Profile Management** with account controls
-- **Secure File Processing** in isolated Docker containers
+- **Secure File Processing** in isolated microservice containers
 
 ## 🏗️ Architecture
 
@@ -41,13 +41,20 @@ OnEd is a comprehensive full-stack TypeScript application that transforms audio 
 
 ### Backend (Express + TypeScript)
 - **Framework**: Express.js with TypeScript
-- **Database**: PostgreSQL/SQLite with Drizzle ORM
+- **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: JWT tokens with bcrypt hashing
 - **File Processing**: Multer for uploads (50MB limit)
-- **AI Integration**: Google Gemini for slide generation
+- **AI Integration**: HTTP communication with Whisper microservice + Google Gemini
+
+### Whisper Microservice (FastAPI + Docker)
+- **Framework**: FastAPI with Python
+- **Engine**: OpenAI Whisper (base model) pre-loaded
+- **API**: RESTful HTTP endpoints for transcription
+- **Containerization**: Docker with pre-downloaded model
+- **Communication**: HTTP requests from Node.js backend
 
 ### AI Services
-- **Transcription**: OpenAI Whisper (base model) in Docker
+- **Transcription**: Whisper FastAPI microservice with HTTP API
 - **Content Generation**: Google Gemini AI for intelligent slide creation
 - **Export Processing**: PptxGenJS for PowerPoint generation
 
@@ -65,13 +72,16 @@ git clone <repository-url>
 cd on-ed
 
 # Automated setup and startup
-./dev-start.sh
+./run-all.sh
 ```
 
 **Access Points:**
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
-- Health Check: http://localhost:5000/health
+- Whisper Service: http://localhost:8000
+- Backend Health: http://localhost:5000/health
+- Whisper Health: http://localhost:8000/health
+- Whisper API Docs: http://localhost:8000/docs
 
 ### Manual Setup
 ```bash
@@ -85,9 +95,9 @@ cd frontend
 npm install
 npm run dev
 
-# Build Whisper Docker image
-cd backend/whisper
-docker build -t whisper-local .
+# Build and start Whisper microservice
+cd whisper
+docker compose up --build
 ```
 
 ## 📋 Environment Configuration
@@ -101,6 +111,7 @@ PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 GEMINI_API_KEY=your-google-gemini-api-key
+WHISPER_SERVICE_URL=http://localhost:8000
 ```
 
 ### Frontend (.env.local)
@@ -276,12 +287,12 @@ slides {
 - **CORS Configuration** for cross-origin security
 - **Helmet Security Headers** for HTTP security
 - **File Upload Validation** with size limits
-- **Docker Container Isolation** for AI processing
+- **Microservice Container Isolation** for AI processing
 
 ## 🚀 Performance Optimizations
 
 - **Next.js 15 with Turbopack** for fast development builds
-- **Pre-downloaded Whisper Model** in Docker containers
+- **Pre-downloaded Whisper Model** in FastAPI microservice
 - **CPU-optimized PyTorch** installation
 - **Efficient File Handling** with automatic cleanup
 - **Database Connection Pooling**
@@ -326,11 +337,14 @@ on-ed/
 │   │   ├── middleware/         # Express middleware
 │   │   ├── schemas/            # Database schemas (Drizzle ORM)
 │   │   └── db/                 # Database configuration
-│   ├── whisper/                # Docker transcription service
-│   │   ├── Dockerfile          # Whisper container
-│   │   └── transcribe.py       # Python transcription script
 │   └── uploads/                # Temporary file storage
-├── dev-start.sh                # Development startup script
+├── whisper/                    # FastAPI microservice for transcription
+│   ├── main.py                 # FastAPI application
+│   ├── requirements.txt        # Python dependencies
+│   ├── Dockerfile              # Microservice container
+│   ├── docker-compose.yml      # Service orchestration
+│   └── README.md               # Microservice documentation
+├── run-all.sh                  # Development startup script
 └── CLAUDE.md                   # Development instructions
 ```
 
