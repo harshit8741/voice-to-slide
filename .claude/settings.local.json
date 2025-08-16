@@ -7,13 +7,7 @@
       "Bash(cat:*)",
       "Bash(grep:*)",
       "Bash(sed:*)",
-      "Bash(find:*)",
-      "Bash(docker-compose up:*)",
-      "Bash(docker build:*)",
-      "Bash(npm install:*)",
-      "Bash(node test-microservice.js)",
-      "Bash(chmod:*)",
-      "Bash(docker:*)"
+      "Bash(find:*)"
     ],
     "deny": []
   }

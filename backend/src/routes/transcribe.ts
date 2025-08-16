@@ -2,27 +2,10 @@ import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import FormData from 'form-data';
+import { exec } from 'child_process';
 import { authenticateToken } from '../middleware/auth';
 
-// Type definitions for Whisper service responses
-interface WhisperTranscriptionResponse {
-  transcription: string;
-  language?: string;
-  success: boolean;
-  error?: string;
-}
-
-interface WhisperHealthResponse {
-  status: string;
-  model_loaded?: boolean;
-  version?: string;
-}
-
 const router = Router();
-
-// Whisper service configuration
-const WHISPER_SERVICE_URL = process.env.WHISPER_SERVICE_URL || 'http://localhost:8000';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -66,52 +49,71 @@ router.post('/', authenticateToken, upload.single('audio'), async (req: Request,
     }
 
     const audioFilePath = req.file.path;
-    
-    try {
-      // Create FormData for multipart/form-data request
-      const formData = new FormData();
-      formData.append('audio', fs.createReadStream(audioFilePath), {
-        filename: req.file.originalname,
-        contentType: req.file.mimetype
-      });
+    const audioFileName = path.basename(audioFilePath);
+    const containerAudioPath = `/app/audio/${audioFileName}`;
 
-      console.log(`Sending transcription request to ${WHISPER_SERVICE_URL}/transcribe`);
-      
-      // Make HTTP request to Whisper microservice
-      const response = await fetch(`${WHISPER_SERVICE_URL}/transcribe`, {
-        method: 'POST',
-        body: formData,
-        // Note: Don't set Content-Type header manually, let fetch set it with boundary
-      });
+    // Docker command to run Whisper transcription
+    const dockerCommand = `docker run --rm -v "${path.dirname(audioFilePath)}:/app/audio" whisper-local "${containerAudioPath}"`;
 
-      const transcriptionResult = await response.json() as WhisperTranscriptionResponse;
-
-      if (response.ok && transcriptionResult.success) {
-        res.json({
-          success: true,
-          transcription: transcriptionResult.transcription,
-          language: transcriptionResult.language || undefined
-        });
-      } else {
-        console.error('Whisper service error:', transcriptionResult);
-        res.status(response.status || 500).json({
-          error: transcriptionResult.error || 'Transcription failed',
-          success: false
-        });
-      }
-
-    } catch (httpError) {
-      console.error('HTTP request to Whisper service failed:', httpError);
-      res.status(503).json({ 
-        error: 'Whisper transcription service unavailable',
-        details: process.env.NODE_ENV === 'development' ? (httpError as Error).message : undefined
-      });
-    } finally {
-      // Always clean up uploaded file
+    // Execute Docker container with longer timeout for first run (model download)
+    exec(dockerCommand, { timeout: 600000, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+      // Clean up uploaded file
       if (fs.existsSync(audioFilePath)) {
         fs.unlinkSync(audioFilePath);
       }
-    }
+
+      if (error) {
+        console.error('Docker execution error:', error);
+        res.status(500).json({ 
+          error: 'Transcription failed',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+        return;
+      }
+
+      if (stderr) {
+        console.log('Docker stderr (may include model download progress):', stderr);
+        
+        // Check if stderr contains actual error JSON or just download progress
+        const stderrLines = stderr.trim().split('\n');
+        const lastLine = stderrLines[stderrLines.length - 1];
+        
+        if (lastLine) {
+          try {
+            // Try to parse the last line as JSON error
+            const errorResponse = JSON.parse(lastLine);
+            if (errorResponse.error && errorResponse.success === false) {
+              res.status(500).json(errorResponse);
+              return;
+            }
+          } catch (parseError) {
+            // If it's not JSON, it might be progress info, continue to check stdout
+            console.log('Stderr appears to be progress information, not error');
+          }
+        }
+      }
+
+      try {
+        // Parse JSON response from Docker container
+        const transcriptionResult = JSON.parse(stdout.trim());
+        
+        if (transcriptionResult.success) {
+          res.json({
+            success: true,
+            transcription: transcriptionResult.transcription,
+            language: transcriptionResult.language || undefined
+          });
+        } else {
+          res.status(500).json(transcriptionResult);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse transcription result:', parseError);
+        res.status(500).json({ 
+          error: 'Invalid transcription response',
+          details: process.env.NODE_ENV === 'development' ? stdout : undefined
+        });
+      }
+    });
 
   } catch (error) {
     console.error('Transcription API error:', error);
@@ -125,45 +127,32 @@ router.post('/', authenticateToken, upload.single('audio'), async (req: Request,
   }
 });
 
-// GET /api/transcribe/health - Test Whisper microservice
+// GET /api/transcribe/health - Test Docker container
 router.get('/health', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log(`Checking Whisper service health at ${WHISPER_SERVICE_URL}/health`);
+    // Test Docker container with a simple command
+    const testCommand = `docker run --rm whisper-local --help`;
     
-    // Test Whisper microservice health
-    const response = await fetch(`${WHISPER_SERVICE_URL}/health`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
+    exec(testCommand, { timeout: 30000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Docker health check failed:', error);
+        res.status(500).json({ 
+          error: 'Docker container health check failed',
+          healthy: false,
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+        return;
       }
-    });
-
-    const healthData = await response.json() as WhisperHealthResponse;
-
-    if (response.ok && healthData.status === 'healthy') {
+      
       res.json({ 
-        message: 'Whisper transcription service is healthy',
+        message: 'Whisper Docker container is healthy',
         healthy: true,
-        service: 'whisper-microservice',
-        serviceUrl: WHISPER_SERVICE_URL,
-        serviceData: healthData
+        container: 'whisper-local'
       });
-    } else {
-      res.status(response.status || 500).json({ 
-        error: 'Whisper service health check failed',
-        healthy: false,
-        serviceUrl: WHISPER_SERVICE_URL,
-        details: healthData
-      });
-    }
+    });
   } catch (error) {
     console.error('Health check error:', error);
-    res.status(503).json({ 
-      error: 'Whisper transcription service unavailable',
-      healthy: false,
-      serviceUrl: WHISPER_SERVICE_URL,
-      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
-    });
+    res.status(500).json({ error: 'Health check failed', healthy: false });
   }
 });
 
