@@ -2,10 +2,13 @@ import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
 import { authenticateToken } from '../middleware/auth';
+import { RevAIService } from '../services/RevAIService';
 
 const router = Router();
+
+// Initialize Rev AI service
+const revAIService = new RevAIService();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -49,71 +52,33 @@ router.post('/', authenticateToken, upload.single('audio'), async (req: Request,
     }
 
     const audioFilePath = req.file.path;
-    const audioFileName = path.basename(audioFilePath);
-    const containerAudioPath = `/app/audio/${audioFileName}`;
 
-    // Docker command to run Whisper transcription
-    const dockerCommand = `docker run --rm -v "${path.dirname(audioFilePath)}:/app/audio" whisper-local "${containerAudioPath}"`;
+    try {
+      // Use Rev AI service to transcribe audio via streaming
+      const transcriptionResult = await revAIService.transcribeAudio(audioFilePath);
 
-    // Execute Docker container with longer timeout for first run (model download)
-    exec(dockerCommand, { timeout: 600000, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+      // Return successful transcription
+      res.json({
+        success: true,
+        transcription: transcriptionResult.transcription,
+        language: transcriptionResult.language || undefined,
+        filename: transcriptionResult.filename
+      });
+
+    } catch (transcriptionError) {
+      console.error('Transcription error:', transcriptionError);
+      res.status(500).json({
+        error: 'Transcription failed',
+        details: process.env.NODE_ENV === 'development' ? 
+          (transcriptionError instanceof Error ? transcriptionError.message : 'Unknown error') : 
+          undefined
+      });
+    } finally {
       // Clean up uploaded file
       if (fs.existsSync(audioFilePath)) {
         fs.unlinkSync(audioFilePath);
       }
-
-      if (error) {
-        console.error('Docker execution error:', error);
-        res.status(500).json({ 
-          error: 'Transcription failed',
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
-        return;
-      }
-
-      if (stderr) {
-        console.log('Docker stderr (may include model download progress):', stderr);
-        
-        // Check if stderr contains actual error JSON or just download progress
-        const stderrLines = stderr.trim().split('\n');
-        const lastLine = stderrLines[stderrLines.length - 1];
-        
-        if (lastLine) {
-          try {
-            // Try to parse the last line as JSON error
-            const errorResponse = JSON.parse(lastLine);
-            if (errorResponse.error && errorResponse.success === false) {
-              res.status(500).json(errorResponse);
-              return;
-            }
-          } catch (parseError) {
-            // If it's not JSON, it might be progress info, continue to check stdout
-            console.log('Stderr appears to be progress information, not error');
-          }
-        }
-      }
-
-      try {
-        // Parse JSON response from Docker container
-        const transcriptionResult = JSON.parse(stdout.trim());
-        
-        if (transcriptionResult.success) {
-          res.json({
-            success: true,
-            transcription: transcriptionResult.transcription,
-            language: transcriptionResult.language || undefined
-          });
-        } else {
-          res.status(500).json(transcriptionResult);
-        }
-      } catch (parseError) {
-        console.error('Failed to parse transcription result:', parseError);
-        res.status(500).json({ 
-          error: 'Invalid transcription response',
-          details: process.env.NODE_ENV === 'development' ? stdout : undefined
-        });
-      }
-    });
+    }
 
   } catch (error) {
     console.error('Transcription API error:', error);
@@ -127,32 +92,34 @@ router.post('/', authenticateToken, upload.single('audio'), async (req: Request,
   }
 });
 
-// GET /api/transcribe/health - Test Docker container
+// GET /api/transcribe/health - Test Rev AI service
 router.get('/health', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
-    // Test Docker container with a simple command
-    const testCommand = `docker run --rm whisper-local --help`;
+    const healthStatus = await revAIService.checkHealth();
     
-    exec(testCommand, { timeout: 30000 }, (error, stdout, stderr) => {
-      if (error) {
-        console.error('Docker health check failed:', error);
-        res.status(500).json({ 
-          error: 'Docker container health check failed',
-          healthy: false,
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
-        return;
-      }
-      
-      res.json({ 
-        message: 'Whisper Docker container is healthy',
+    if (healthStatus.healthy) {
+      res.json({
+        message: 'Rev AI service is healthy',
         healthy: true,
-        container: 'whisper-local'
+        service: 'rev-ai-streaming',
+        details: healthStatus.details
       });
-    });
+    } else {
+      res.status(500).json({
+        error: 'Rev AI service health check failed',
+        healthy: false,
+        details: process.env.NODE_ENV === 'development' ? healthStatus.details : undefined
+      });
+    }
   } catch (error) {
     console.error('Health check error:', error);
-    res.status(500).json({ error: 'Health check failed', healthy: false });
+    res.status(500).json({ 
+      error: 'Health check failed', 
+      healthy: false,
+      details: process.env.NODE_ENV === 'development' ? 
+        (error instanceof Error ? error.message : 'Unknown error') : 
+        undefined
+    });
   }
 });
 

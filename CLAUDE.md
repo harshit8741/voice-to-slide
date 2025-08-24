@@ -30,12 +30,11 @@ npm run db:migrate   # Apply pending migrations to database
 npm run db:studio    # Open Drizzle Studio for database management
 ```
 
-### Docker Commands
-```bash
-cd backend/whisper
-docker build -t whisper-local .  # Build Whisper transcription container
-docker run --rm whisper-local --help  # Test container health
-```
+### Rev AI Transcription Service
+The application uses Rev AI streaming API for real-time audio transcription:
+- Supports multiple audio formats: MP3, WAV, WebM, M4A, OGG, FLAC  
+- Streaming transcription via WebSocket connection
+- No additional setup required - integrated directly into backend
 
 ## Architecture Overview
 
@@ -54,23 +53,22 @@ This is an AI-powered audio transcription platform with presentation generation 
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: JWT tokens with bcrypt password hashing + Google OAuth 2.0
 - **File Processing**: Multer for audio uploads (50MB limit)
-- **AI Integration**: Dockerized OpenAI Whisper + Google Gemini for slide generation
+- **AI Integration**: Rev AI streaming transcription + Google Gemini for slide generation
 - **Architecture Pattern**: Service layer with middleware-based validation
 
 ### AI Transcription System
-- **Engine**: OpenAI Whisper (base model) in Docker container
-- **Containerization**: Pre-built image with model included to avoid download delays
+- **Engine**: Rev AI streaming speech-to-text API
+- **Architecture**: Real-time WebSocket-based transcription service
 - **Supported Formats**: MP3, WAV, WebM, M4A, OGG, FLAC
-- **Processing**: Isolated Docker execution for security and scalability
+- **Processing**: Direct integration with Rev AI streaming API for real-time transcription
 
 ## Key Directories
 - `frontend/src/app/` - Next.js App Router pages (dashboard, audio-to-slides, presentations)
 - `frontend/src/components/ui/` - UI components (AudioRecorder, SlideViewer, Button, Input)
 - `frontend/src/lib/` - Utilities (API client with interceptors, auth context, validations)
 - `backend/src/routes/` - API endpoints (auth, users, transcribe, slides, audioToSlides)
-- `backend/src/services/` - Business logic (AuthService, UserService, slideGeneratorService)
+- `backend/src/services/` - Business logic (AuthService, UserService, RevAIService, slideGeneratorService)
 - `backend/src/schemas/` - Drizzle ORM schemas for PostgreSQL
-- `backend/whisper/` - Docker container for Whisper transcription
 
 ## Database Configuration
 
@@ -91,6 +89,9 @@ PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 GEMINI_API_KEY=your-gemini-api-key
+
+# Rev AI Configuration
+REV_AI_API_KEY=your-rev-ai-api-key
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
@@ -145,8 +146,8 @@ Base URL: `http://localhost:5000/api`
 
 ### Audio Transcription Workflow
 ```
-User uploads/records audio → Multer handles file → Docker Whisper processes → 
-JSON response with transcription → Frontend displays results
+User uploads/records audio → Multer handles file → Rev AI WebSocket connection → 
+Streaming transcription via Rev AI API → JSON response with transcription → Frontend displays results
 ```
 
 ### Slide Generation Workflow
@@ -157,10 +158,9 @@ Stored in database → SlideViewer component displays
 
 ### Development Startup
 1. `./run-all.sh` handles complete setup:
-   - Builds Docker Whisper image if needed
    - Installs dependencies for both frontend/backend
-   - Sets up environment files
-   - Starts servers concurrently
+   - Sets up environment files with Rev AI configuration
+   - Starts servers concurrently (frontend and backend)
    - Provides health checks and monitoring
 
 ## PowerPoint Export Feature

@@ -12,7 +12,6 @@ NC='\033[0m' # No Color
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
-WHISPER_DIR="$PROJECT_ROOT/backend/whisper"
 
 # PID tracking
 BACKEND_PID=""
@@ -32,7 +31,8 @@ cleanup() {
         kill $FRONTEND_PID 2>/dev/null
     fi
     
-    # Kill any remaining Node processes
+    
+    # Kill any remaining processes
     pkill -f "tsx watch" 2>/dev/null
     pkill -f "next dev" 2>/dev/null
     
@@ -44,7 +44,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 echo -e "${BLUE}===============================================${NC}"
-echo -e "${BLUE}🚀 Starting Audio Transcription App${NC}"
+echo -e "${BLUE}🚀 Starting Audio Transcription App (Rev AI)${NC}"
 echo -e "${BLUE}===============================================${NC}"
 
 # Check prerequisites
@@ -56,42 +56,10 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Check if Docker is installed and running
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}❌ Docker is not installed${NC}"
-    exit 1
-fi
-
-if ! docker info &> /dev/null; then
-    echo -e "${RED}❌ Docker is not running${NC}"
-    exit 1
-fi
 
 echo -e "${GREEN}✅ Prerequisites check passed${NC}"
 
-# 1. Build Whisper Docker Image (if needed)
-echo -e "\n${CYAN}🐳 Checking Whisper Docker Image...${NC}"
-cd "$WHISPER_DIR" || {
-    echo -e "${RED}❌ Failed to navigate to whisper directory${NC}"
-    exit 1
-}
-
-if [[ "$(docker images -q whisper-local 2> /dev/null)" == "" ]]; then
-    echo -e "${YELLOW}📦 Building Whisper Docker image with pre-downloaded model (this may take 10-15 minutes)...${NC}"
-    echo -e "${CYAN}    This includes downloading PyTorch, Whisper, and the base model (~2.4GB total)${NC}"
-    if docker build -t whisper-local . > build.log 2>&1; then
-        echo -e "${GREEN}✅ Docker image built successfully with model included${NC}"
-    else
-        echo -e "${RED}❌ Failed to build Docker image. Check build.log for details${NC}"
-        exit 1
-    fi
-else
-    echo -e "${GREEN}✅ Whisper Docker image already exists${NC}"
-    # Check if the image needs to be rebuilt (if it doesn't have the pre-downloaded model)
-    echo -e "${CYAN}🔍 Verifying image includes pre-downloaded model...${NC}"
-fi
-
-# 2. Setup and start Backend
+# 1. Setup and start Backend
 echo -e "\n${CYAN}🟢 Setting up Backend Server...${NC}"
 cd "$BACKEND_DIR" || {
     echo -e "${RED}❌ Failed to navigate to backend directory${NC}"
@@ -120,6 +88,7 @@ JWT_EXPIRES_IN=7d
 PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
+REV_AI_API_KEY=your-rev-ai-api-key-here
 EOF
         echo -e "${YELLOW}⚠️  Created default .env file - please update with your settings${NC}"
     fi
@@ -145,7 +114,7 @@ for i in {1..30}; do
     sleep 1
 done
 
-# 3. Setup and start Frontend
+# 2. Setup and start Frontend
 echo -e "\n${CYAN}🌐 Setting up Frontend App...${NC}"
 cd "$FRONTEND_DIR" || {
     echo -e "${RED}❌ Failed to navigate to frontend directory${NC}"
@@ -186,14 +155,14 @@ for i in {1..30}; do
     sleep 1
 done
 
-# 4. Final summary
+# 3. Final summary
 echo -e "\n${BLUE}===============================================${NC}"
 echo -e "${GREEN}🎉 All services are running successfully!${NC}"
 echo -e "${BLUE}===============================================${NC}"
 echo -e "${CYAN}🌐 Frontend:       http://localhost:3000${NC}"
 echo -e "${CYAN}🔧 Backend API:    http://localhost:5000${NC}"
+echo -e "${CYAN}🎙️ Rev AI:         Integrated via WebSocket${NC}"
 echo -e "${CYAN}❤️  Health Check:  http://localhost:5000/health${NC}"
-echo -e "${CYAN}🐳 Docker Image:   whisper-local${NC}"
 echo -e "${BLUE}===============================================${NC}"
 echo -e "${YELLOW}📝 Features Available:${NC}"
 echo -e "${CYAN}   • User registration and authentication${NC}"
@@ -204,7 +173,6 @@ echo -e "${BLUE}===============================================${NC}"
 echo -e "${YELLOW}🔍 Log Files:${NC}"
 echo -e "${CYAN}   • Backend: $BACKEND_DIR/backend.log${NC}"
 echo -e "${CYAN}   • Frontend: $FRONTEND_DIR/frontend.log${NC}"
-echo -e "${CYAN}   • Docker Build: $WHISPER_DIR/build.log${NC}"
 echo -e "${BLUE}===============================================${NC}"
 echo -e "${RED}Press Ctrl+C to stop all services${NC}"
 

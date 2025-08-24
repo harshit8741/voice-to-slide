@@ -7,7 +7,12 @@
       "Bash(cat:*)",
       "Bash(grep:*)",
       "Bash(sed:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cp:*)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:docs.rev.ai)",
+      "Bash(curl:*)",
+      "Bash(node test-revai.js)"
     ],
     "deny": []
   }

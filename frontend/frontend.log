@@ -8,38 +8,19 @@
    - Environments: .env.local
 
  ✓ Starting...
- ✓ Ready in 2.6s
+ ✓ Ready in 3s
  ○ Compiling / ...
- ✓ Compiled / in 7.3s
- GET / 200 in 8373ms
- GET / 200 in 345ms
- ○ Compiling /favicon.ico ...
- ✓ Compiled /favicon.ico in 551ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 908ms
+ ✓ Compiled / in 8.1s
+ GET / 200 in 9261ms
  ○ Compiling /login ...
- ✓ Compiled /login in 1073ms
- GET /login 200 in 1179ms
- GET /login 200 in 116ms
- ○ Compiling /auth/callback ...
- ✓ Compiled /auth/callback in 588ms
- GET /auth/callback?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjNTJhOWIyYy0zYWUzLTQyNDEtYmY4MS1hY2Q0OWZhMDA0M2MiLCJlbWFpbCI6ImhhcnNoaXRzMDI0MEBnbWFpbC5jb20iLCJpYXQiOjE3NTUyNTUyMTMsImV4cCI6MTc1NTg2MDAxM30.LPkysw2jiW5ImiUKRVEV5JsDFenZPQs9Om2VrwXYIDI 200 in 720ms
- ○ Compiling /dashboard ...
- ✓ Compiled /dashboard in 600ms
- GET /dashboard 200 in 690ms
- GET /dashboard 200 in 101ms
- GET /dashboard 200 in 83ms
- GET /dashboard 200 in 75ms
- GET / 200 in 94ms
+ ✓ Compiled /login in 981ms
+ GET /login 200 in 1139ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 572ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 908ms
+ GET /login 200 in 159ms
+ GET / 200 in 133ms
  ○ Compiling /slides/[id] ...
- ✓ Compiled /slides/[id] in 2.1s
- GET /slides/c51ae7a1-0970-4816-a5c4-06630401d8bc 200 in 3815ms
- ○ Compiling /presentations ...
- ✓ Compiled /presentations in 833ms
- GET /presentations 200 in 922ms
- GET /slides/849d9f33-11c7-4796-b7a2-2177dec3e825 200 in 132ms
- GET / 200 in 136ms
- GET /slides/1442d5d5-092f-47e8-be77-5229af64d95f 200 in 412ms
- GET /presentations 200 in 113ms
- GET /slides/1442d5d5-092f-47e8-be77-5229af64d95f 200 in 133ms
- GET /presentations 200 in 224ms
+ ✓ Compiled /slides/[id] in 745ms
+ GET /slides/16d3344d-d9d9-49b4-98c7-964df8e6d1a2 200 in 1536ms
 [?25h

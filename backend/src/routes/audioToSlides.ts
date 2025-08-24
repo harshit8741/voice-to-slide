@@ -2,24 +2,25 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
 import { authenticateToken } from '../middleware/auth';
 import { SlideGeneratorService } from '../services/slideGeneratorService';
 import { YouTubeService } from '../services/youtubeService';
+import { RevAIService } from '../services/RevAIService';
 
 const router = express.Router();
 const slideGeneratorService = new SlideGeneratorService();
+const revAIService = new RevAIService();
 
 // Configure multer for file uploads (same as transcribe route)
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_, __, cb) => {
     const uploadsDir = path.join(__dirname, '../../uploads');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
     cb(null, uploadsDir);
   },
-  filename: (req, file, cb) => {
+  filename: (_, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
@@ -30,7 +31,7 @@ const upload = multer({
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_, file, cb) => {
     if (file.mimetype.startsWith('audio/') || 
         file.originalname.match(/\.(mp3|wav|webm|m4a|ogg|flac)$/i)) {
       cb(null, true);
@@ -42,73 +43,40 @@ const upload = multer({
 
 // Helper function to process audio file (either uploaded or from YouTube)
 const processAudioFile = async (audioFilePath: string, userId: string, title?: string) => {
-  const audioFileName = path.basename(audioFilePath);
-  const containerAudioPath = `/app/audio/${audioFileName}`;
+  try {
+    // Transcribe audio using Rev AI
+    const transcriptionResult = await revAIService.transcribeAudio(audioFilePath);
+    
+    // Clean up audio file after transcription
+    if (fs.existsSync(audioFilePath)) {
+      fs.unlinkSync(audioFilePath);
+    }
 
-  // Transcribe audio using Whisper
-  const dockerCommand = `docker run --rm -v "${path.dirname(audioFilePath)}:/app/audio" whisper-local "${containerAudioPath}"`;
+    if (!transcriptionResult.success || !transcriptionResult.transcription) {
+      throw new Error('Transcription failed: No transcription result');
+    }
 
-  const transcriptionPromise = new Promise<string>((resolve, reject) => {
-    exec(dockerCommand, { timeout: 600000, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
-      // Clean up audio file
-      if (fs.existsSync(audioFilePath)) {
-        fs.unlinkSync(audioFilePath);
-      }
+    const transcription = transcriptionResult.transcription.trim();
 
-      if (error) {
-        console.error('Docker execution error:', error);
-        reject(new Error('Transcription failed: ' + error.message));
-        return;
-      }
+    if (transcription.length < 10) {
+      throw new Error('Transcription too short or empty. Please provide a longer audio recording.');
+    }
 
-      if (stderr) {
-        console.log('Docker stderr (may include model download progress):', stderr);
-        
-        const stderrLines = stderr.trim().split('\n');
-        const lastLine = stderrLines[stderrLines.length - 1];
-        
-        if (lastLine) {
-          try {
-            const errorResponse = JSON.parse(lastLine);
-            if (errorResponse.error && errorResponse.success === false) {
-              reject(new Error('Transcription failed: ' + errorResponse.error));
-              return;
-            }
-          } catch (parseError) {
-            // Continue if it's not JSON error
-          }
-        }
-      }
+    // Generate slides from transcription
+    const presentation = await slideGeneratorService.generateSlidesFromTranscription(
+      transcription,
+      userId,
+      title
+    );
 
-      try {
-        const transcriptionResult = JSON.parse(stdout.trim());
-        
-        if (transcriptionResult.success) {
-          resolve(transcriptionResult.transcription);
-        } else {
-          reject(new Error('Transcription failed: ' + (transcriptionResult.error || 'Unknown error')));
-        }
-      } catch (parseError) {
-        console.error('Failed to parse transcription result:', parseError);
-        reject(new Error('Invalid transcription response'));
-      }
-    });
-  });
-
-  const transcription = await transcriptionPromise;
-
-  if (!transcription || transcription.trim().length < 10) {
-    throw new Error('Transcription too short or empty. Please provide a longer audio recording.');
+    return { presentation, transcription };
+  } catch (error) {
+    // Clean up audio file in case of error
+    if (fs.existsSync(audioFilePath)) {
+      fs.unlinkSync(audioFilePath);
+    }
+    throw error;
   }
-
-  // Generate slides from transcription
-  const presentation = await slideGeneratorService.generateSlidesFromTranscription(
-    transcription,
-    userId,
-    title
-  );
-
-  return { presentation, transcription };
 };
 
 // POST /api/audio-to-slides - Convert audio directly to slides (file upload or YouTube URL)
