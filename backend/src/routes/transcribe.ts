@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { authenticateToken } from '../middleware/auth';
 import { RevAIService } from '../services/RevAIService';
+import { transcribeAudio } from '@/services/deepGramAI';
 
 const router = Router();
 
@@ -55,14 +56,15 @@ router.post('/', authenticateToken, upload.single('audio'), async (req: Request,
 
     try {
       // Use Rev AI service to transcribe audio via streaming
-      const transcriptionResult = await revAIService.transcribeAudio(audioFilePath);
+      // const transcriptionResult = await revAIService.transcribeAudio(audioFilePath);
+      const transcriptionResult = await transcribeAudio(audioFilePath);
 
       // Return successful transcription
       res.json({
         success: true,
-        transcription: transcriptionResult.transcription,
+        transcription: transcriptionResult,
         language: transcriptionResult.language || undefined,
-        filename: transcriptionResult.filename
+        filename: ''
       });
 
     } catch (transcriptionError) {

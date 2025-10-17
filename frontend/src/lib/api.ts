@@ -70,7 +70,7 @@ export const authApi = {
   },
 };
 
-// User API functions
+// User API functions 
 export const userApi = {
   getUsers: async (): Promise<User[]> => {
     const response = await api.get('/api/users');
