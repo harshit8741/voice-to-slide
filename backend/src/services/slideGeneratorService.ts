@@ -53,14 +53,14 @@ export class SlideGeneratorService {
     try {
       const prompt = this.createPrompt(transcription);
       console.log("prompt:" + prompt);
-      const result = await this.model.generateContent(prompt);
-      console.log(result);
+      // const result = await this.model.generateContent(prompt);
+      // console.log(result);
       // const response = await result.response;
       // const text = response.text();
 
       const response = await this.ai.models.generateContent({
         model: "gemini-2.0-flash-001",
-        contents: "Why is the sky blue?",
+        contents: prompt,
       });
       console.log(response.text);
 
