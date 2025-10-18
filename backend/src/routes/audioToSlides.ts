@@ -117,7 +117,7 @@ router.post(
 
           // Download audio from YouTube
           const audioFilePath = await YouTubeService.downloadAudio(youtubeUrl);
-
+          console.log(audioFilePath);
           // Process the downloaded audio
           const { presentation, transcription } = await processAudioFile(
             audioFilePath,
