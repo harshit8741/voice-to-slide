@@ -5,22 +5,16 @@
    ▲ Next.js 15.4.3 (Turbopack)
    - Local:        http://localhost:3000
    - Network:      http://10.255.255.254:3000
-   - Environments: .env.local
+   - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 3s
+ ✓ Ready in 1427ms
  ○ Compiling / ...
- ✓ Compiled / in 8.1s
- GET / 200 in 9261ms
- ○ Compiling /login ...
- ✓ Compiled /login in 981ms
- GET /login 200 in 1139ms
+ ✓ Compiled / in 5.1s
+ GET / 200 in 5560ms
+ GET / 200 in 178ms
+ GET / 200 in 170ms
  ○ Compiling /favicon.ico ...
- ✓ Compiled /favicon.ico in 572ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 908ms
- GET /login 200 in 159ms
- GET / 200 in 133ms
- ○ Compiling /slides/[id] ...
- ✓ Compiled /slides/[id] in 745ms
- GET /slides/16d3344d-d9d9-49b4-98c7-964df8e6d1a2 200 in 1536ms
+ ✓ Compiled /favicon.ico in 610ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 933ms
 [?25h
