@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { authenticateToken } from '../middleware/auth';
 import { RevAIService } from '../services/RevAIService';
-import { transcribeAudio } from '@/services/deepGramAI';
+import { transcribeAudio } from '../services/deepGramAI';
 
 const router = Router();
 
