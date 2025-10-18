@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../db";
 import {
   presentations,
@@ -31,7 +31,7 @@ interface SlideContent {
 }
 
 export class SlideGeneratorService {
-  private genAI: GoogleGenerativeAI;
+  // private genAI: GoogleGenerativeAI;
   private model: any;
   private ai: any;
 
@@ -40,8 +40,8 @@ export class SlideGeneratorService {
       throw new Error("GEMINI_API_KEY environment variable is required");
     }
 
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   }
 
