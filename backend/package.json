@@ -16,6 +16,7 @@
   "description": "",
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12",
+    "@google/genai": "^1.25.0",
     "@google/generative-ai": "^0.24.1",
     "@types/form-data": "^2.5.2",
     "@types/multer": "^2.0.0",

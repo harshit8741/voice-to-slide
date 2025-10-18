@@ -1,7 +1,14 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { db } from '../db';
-import { presentations, slides, type NewPresentation, type NewSlide, type PresentationWithSlides } from '../schemas/presentations';
-import { eq } from 'drizzle-orm';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { db } from "../db";
+import {
+  presentations,
+  slides,
+  type NewPresentation,
+  type NewSlide,
+  type PresentationWithSlides,
+} from "../schemas/presentations";
+import { eq } from "drizzle-orm";
+import { GoogleGenAI } from "@google/genai";
 
 interface TopicContent {
   title: string;
@@ -16,7 +23,6 @@ interface ChapterContent {
   topics: TopicContent[];
 }
 
-
 interface SlideContent {
   title: string;
   bulletPoints: string[];
@@ -27,40 +33,53 @@ interface SlideContent {
 export class SlideGeneratorService {
   private genAI: GoogleGenerativeAI;
   private model: any;
+  private ai: any;
 
   constructor() {
     if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
+      throw new Error("GEMINI_API_KEY environment variable is required");
     }
-    
+
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   }
 
-  async generateSlidesFromTranscription(transcription: string, userId: string, presentationTitle?: string): Promise<PresentationWithSlides> {
+  async generateSlidesFromTranscription(
+    transcription: string,
+    userId: string,
+    presentationTitle?: string
+  ): Promise<PresentationWithSlides> {
     try {
       const prompt = this.createPrompt(transcription);
-      console.log("prompt:"+prompt);
+      console.log("prompt:" + prompt);
       const result = await this.model.generateContent(prompt);
       console.log(result);
-      const response = await result.response;
-      const text = response.text();
-      
-      const generatedSlides = this.parseGeminiResponse(text);
-      
-      const finalTitle = presentationTitle || generatedSlides.title || 'Generated Presentation';
-      
+      // const response = await result.response;
+      // const text = response.text();
+
+      const response = await this.ai.models.generateContent({
+        model: "gemini-2.0-flash-001",
+        contents: "Why is the sky blue?",
+      });
+      console.log(response.text);
+
+      const generatedSlides = this.parseGeminiResponse(response.text);
+
+      const finalTitle =
+        presentationTitle || generatedSlides.title || "Generated Presentation";
+
       const savedPresentation = await this.savePresentationToDatabase(
         transcription,
         userId,
         finalTitle,
         generatedSlides.slides
       );
-      
+
       return savedPresentation;
     } catch (error) {
-      console.error('Error generating slides:', error);
-      throw new Error('Failed to generate slides from transcription');
+      console.error("Error generating slides:", error);
+      throw new Error("Failed to generate slides from transcription");
     }
   }
 
@@ -115,101 +134,115 @@ ${transcription}
 `.trim();
   }
 
-  private parseGeminiResponse(response: string): { title: string; slides: SlideContent[] } {
+  private parseGeminiResponse(response: string): {
+    title: string;
+    slides: SlideContent[];
+  } {
     try {
       // Clean the response to extract JSON
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('No JSON found in response');
+        throw new Error("No JSON found in response");
       }
-      
+
       const jsonStr = jsonMatch[0];
       const parsed = JSON.parse(jsonStr);
-      
+
       // Check for new chapter-based structure
       if (parsed.title && Array.isArray(parsed.chapters)) {
         // New format: flatten chapters and topics into slides
         const slides: SlideContent[] = [];
-        
+
         for (const chapter of parsed.chapters) {
           if (chapter.topics && Array.isArray(chapter.topics)) {
             for (const topic of chapter.topics) {
               if (topic.title) {
                 // Create bullet points from content and existing bulletPoints
                 let bulletPoints: string[] = [];
-                
+
                 if (topic.content) {
                   // Split content into sentences or use as single point
-                  const contentLines = topic.content.split(/[.!?]+/).filter((line: string) => line.trim());
-                  bulletPoints = contentLines.length > 1 ? contentLines.map((line: string) => line.trim()) : [topic.content];
+                  const contentLines = topic.content
+                    .split(/[.!?]+/)
+                    .filter((line: string) => line.trim());
+                  bulletPoints =
+                    contentLines.length > 1
+                      ? contentLines.map((line: string) => line.trim())
+                      : [topic.content];
                 }
-                
+
                 if (topic.bulletPoints && Array.isArray(topic.bulletPoints)) {
                   bulletPoints = bulletPoints.concat(topic.bulletPoints);
                 }
-                
+
                 // Ensure we have at least some content
                 if (bulletPoints.length === 0) {
-                  bulletPoints = ['Content from transcription'];
+                  bulletPoints = ["Content from transcription"];
                 }
-                
+
                 slides.push({
                   title: topic.title,
                   bulletPoints: bulletPoints,
                   keyTakeaway: topic.keyTakeaway || null,
-                  imageIdea: topic.imageIdea || null
+                  imageIdea: topic.imageIdea || null,
                 });
               }
             }
           }
         }
-        
+
         if (slides.length > 0) {
           return {
             title: parsed.title,
-            slides: slides
+            slides: slides,
           };
         }
       }
-      
+
       // Check for old slides-based structure (backward compatibility)
       if (parsed.title && Array.isArray(parsed.slides)) {
-        const validSlides = parsed.slides.filter((slide: any) => 
-          slide.title && (Array.isArray(slide.bulletPoints) || slide.content)
-        ).map((slide: any) => ({
-          title: slide.title,
-          bulletPoints: slide.bulletPoints || (slide.content ? [slide.content] : []),
-          keyTakeaway: slide.keyTakeaway || null,
-          imageIdea: slide.imageIdea || null
-        }));
-        
+        const validSlides = parsed.slides
+          .filter(
+            (slide: any) =>
+              slide.title &&
+              (Array.isArray(slide.bulletPoints) || slide.content)
+          )
+          .map((slide: any) => ({
+            title: slide.title,
+            bulletPoints:
+              slide.bulletPoints || (slide.content ? [slide.content] : []),
+            keyTakeaway: slide.keyTakeaway || null,
+            imageIdea: slide.imageIdea || null,
+          }));
+
         if (validSlides.length > 0) {
           return {
             title: parsed.title,
-            slides: validSlides
+            slides: validSlides,
           };
         }
       }
-      
-      throw new Error('Invalid response structure - no valid slides or chapters found');
-      
+
+      throw new Error(
+        "Invalid response structure - no valid slides or chapters found"
+      );
     } catch (error) {
-      console.error('Error parsing Gemini response:', error);
-      console.error('Raw response:', response);
-      
+      console.error("Error parsing Gemini response:", error);
+      console.error("Raw response:", response);
+
       // Fallback: create a simple slide structure
       return {
-        title: 'Generated Presentation',
+        title: "Generated Presentation",
         slides: [
           {
-            title: 'Summary',
+            title: "Summary",
             bulletPoints: [
-              'Content extracted from transcription',
-              'Please review and edit as needed',
-              'Additional slides can be added manually'
-            ]
-          }
-        ]
+              "Content extracted from transcription",
+              "Please review and edit as needed",
+              "Additional slides can be added manually",
+            ],
+          },
+        ],
       };
     }
   }
@@ -224,11 +257,14 @@ ${transcription}
     const newPresentation: NewPresentation = {
       title,
       transcription,
-      userId
+      userId,
     };
-    
-    const [presentation] = await (db as any).insert(presentations).values(newPresentation).returning();
-    
+
+    const [presentation] = await (db as any)
+      .insert(presentations)
+      .values(newPresentation)
+      .returning();
+
     // Create slides
     const slidePromises = slideContents.map(async (slideContent, index) => {
       const newSlide: NewSlide = {
@@ -237,46 +273,49 @@ ${transcription}
         bulletPoints: JSON.stringify(slideContent.bulletPoints),
         keyTakeaway: slideContent.keyTakeaway || null,
         imageIdea: slideContent.imageIdea || null,
-        slideOrder: index
+        slideOrder: index,
       };
-      
+
       return (db as any).insert(slides).values(newSlide).returning();
     });
-    
+
     const slideResults = await Promise.all(slidePromises);
     const createdSlides = slideResults.map((result: any) => result[0]);
-    
+
     return {
       ...presentation,
-      slides: createdSlides
+      slides: createdSlides,
     };
   }
 
-  async getPresentationWithSlides(presentationId: string, userId: string): Promise<PresentationWithSlides | null> {
+  async getPresentationWithSlides(
+    presentationId: string,
+    userId: string
+  ): Promise<PresentationWithSlides | null> {
     try {
       const presentation = await (db as any)
         .select()
         .from(presentations)
         .where(eq(presentations.id, presentationId))
         .limit(1);
-      
+
       if (presentation.length === 0 || presentation[0].userId !== userId) {
         return null;
       }
-      
+
       const presentationSlides = await (db as any)
         .select()
         .from(slides)
         .where(eq(slides.presentationId, presentationId))
         .orderBy(slides.slideOrder);
-      
+
       return {
         ...presentation[0],
-        slides: presentationSlides
+        slides: presentationSlides,
       };
     } catch (error) {
-      console.error('Error fetching presentation:', error);
-      throw new Error('Failed to fetch presentation');
+      console.error("Error fetching presentation:", error);
+      throw new Error("Failed to fetch presentation");
     }
   }
 
@@ -288,12 +327,15 @@ ${transcription}
         .where(eq(presentations.userId, userId))
         .orderBy(presentations.createdAt);
     } catch (error) {
-      console.error('Error fetching user presentations:', error);
-      throw new Error('Failed to fetch presentations');
+      console.error("Error fetching user presentations:", error);
+      throw new Error("Failed to fetch presentations");
     }
   }
 
-  async deletePresentation(presentationId: string, userId: string): Promise<boolean> {
+  async deletePresentation(
+    presentationId: string,
+    userId: string
+  ): Promise<boolean> {
     try {
       // Verify ownership
       const presentation = await (db as any)
@@ -301,21 +343,25 @@ ${transcription}
         .from(presentations)
         .where(eq(presentations.id, presentationId))
         .limit(1);
-      
+
       if (presentation.length === 0 || presentation[0].userId !== userId) {
         return false;
       }
-      
+
       // Delete slides first (due to foreign key constraint)
-      await (db as any).delete(slides).where(eq(slides.presentationId, presentationId));
-      
+      await (db as any)
+        .delete(slides)
+        .where(eq(slides.presentationId, presentationId));
+
       // Delete presentation
-      await (db as any).delete(presentations).where(eq(presentations.id, presentationId));
-      
+      await (db as any)
+        .delete(presentations)
+        .where(eq(presentations.id, presentationId));
+
       return true;
     } catch (error) {
-      console.error('Error deleting presentation:', error);
-      throw new Error('Failed to delete presentation');
+      console.error("Error deleting presentation:", error);
+      throw new Error("Failed to delete presentation");
     }
   }
 }
