@@ -112,8 +112,8 @@ router.post(
       if (youtubeUrl) {
         try {
           // Get video info for title if not provided
-          const videoInfo = await YouTubeService.getVideoInfo(youtubeUrl);
-          const finalTitle = title || videoInfo.title;
+          // const videoInfo = await YouTubeService.getVideoInfo(youtubeUrl);
+          // const finalTitle = title || videoInfo.title;
 
           // Download audio from YouTube
           const audioFilePath = await YouTubeService.downloadAudio(youtubeUrl);
@@ -122,14 +122,14 @@ router.post(
           const { presentation, transcription } = await processAudioFile(
             audioFilePath,
             userId,
-            finalTitle
+            // finalTitle
           );
 
           res.status(201).json({
             message: "Slides generated successfully from YouTube video",
             presentation,
             transcription,
-            videoInfo,
+            // videoInfo,
           });
           return;
         } catch (error: any) {
