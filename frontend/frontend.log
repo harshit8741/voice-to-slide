@@ -8,13 +8,15 @@
    - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 1427ms
+ ✓ Ready in 1544ms
  ○ Compiling / ...
- ✓ Compiled / in 5.1s
- GET / 200 in 5560ms
- GET / 200 in 178ms
- GET / 200 in 170ms
- ○ Compiling /favicon.ico ...
- ✓ Compiled /favicon.ico in 610ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 933ms
+ ✓ Compiled / in 5.5s
+ GET / 200 in 6211ms
+ GET / 200 in 4169ms
+ ✓ Compiled /favicon.ico in 421ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 754ms
+ GET / 200 in 129ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 300ms
+ GET / 200 in 136ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 290ms
 [?25h

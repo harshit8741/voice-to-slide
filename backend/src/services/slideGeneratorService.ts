@@ -40,7 +40,9 @@ export class SlideGeneratorService {
   async generateSlidesFromTranscription(transcription: string, userId: string, presentationTitle?: string): Promise<PresentationWithSlides> {
     try {
       const prompt = this.createPrompt(transcription);
+      console.log("prompt:"+prompt);
       const result = await this.model.generateContent(prompt);
+      console.log(result);
       const response = await result.response;
       const text = response.text();
       
