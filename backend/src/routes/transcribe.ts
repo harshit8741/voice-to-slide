@@ -52,6 +52,8 @@ router.post('/', authenticateToken, upload.single('audio'), async (req: Request,
       return;
     }
 
+    console.log("Inside transcription");
+
     const audioFilePath = req.file.path;
 
     try {
@@ -63,7 +65,7 @@ router.post('/', authenticateToken, upload.single('audio'), async (req: Request,
       res.json({
         success: true,
         transcription: transcriptionResult,
-        language: transcriptionResult.language || undefined,
+        // language: transcriptionResult.language || undefined,
         filename: ''
       });
 
